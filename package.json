@@ -1,0 +1,15 @@
+{
+  "name": "j-s-traders-chair-factory",
+  "version": "1.0.0",
+  "description": "Premium Chair Manufacturing Website - Nepal",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix ./chair-company-website run dev",
+    "build": "npm --prefix ./chair-company-website run build",
+    "start": "npm --prefix ./chair-company-website run start",
+    "lint": "npm --prefix ./chair-company-website run lint",
+    "postinstall": "npm --prefix ./chair-company-website install"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

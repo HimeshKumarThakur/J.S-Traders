@@ -1,0 +1,324 @@
+"use client";
+
+import Image from 'next/image';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  rating: number;
+  reviews: number;
+  stock: number;
+  material: 'Mesh' | 'Leather' | 'Fabric';
+  color: 'Black' | 'Grey' | 'Brown';
+  imagePrimary: string;
+  imageSecondary: string;
+};
+
+const products: Product[] = [
+  {
+    id: 'executive-pro-x1',
+    name: 'Executive Pro X1',
+    price: 48900,
+    rating: 4.9,
+    reviews: 128,
+    stock: 3,
+    material: 'Leather',
+    color: 'Black',
+    imagePrimary: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&w=1000&q=80',
+    imageSecondary: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1000&q=80',
+  },
+  {
+    id: 'mesh-aero-2',
+    name: 'Mesh Aero 2',
+    price: 32900,
+    rating: 4.7,
+    reviews: 94,
+    stock: 7,
+    material: 'Mesh',
+    color: 'Grey',
+    imagePrimary: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1000&q=80',
+    imageSecondary: 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=1000&q=80',
+  },
+  {
+    id: 'lumbar-signature',
+    name: 'Lumbar Signature',
+    price: 39900,
+    rating: 4.8,
+    reviews: 112,
+    stock: 2,
+    material: 'Fabric',
+    color: 'Brown',
+    imagePrimary: 'https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=1000&q=80',
+    imageSecondary: 'https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=1000&q=80',
+  },
+  {
+    id: 'boardroom-prime',
+    name: 'Boardroom Prime',
+    price: 52900,
+    rating: 4.9,
+    reviews: 86,
+    stock: 4,
+    material: 'Leather',
+    color: 'Brown',
+    imagePrimary: 'https://images.unsplash.com/photo-1519947486511-46149fa0a254?auto=format&fit=crop&w=1000&q=80',
+    imageSecondary: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1000&q=80',
+  },
+  {
+    id: 'studio-task-pro',
+    name: 'Studio Task Pro',
+    price: 26900,
+    rating: 4.6,
+    reviews: 76,
+    stock: 9,
+    material: 'Mesh',
+    color: 'Black',
+    imagePrimary: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=1000&q=80',
+    imageSecondary: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1000&q=80',
+  },
+  {
+    id: 'ergofit-classic',
+    name: 'ErgoFit Classic',
+    price: 29900,
+    rating: 4.7,
+    reviews: 67,
+    stock: 5,
+    material: 'Fabric',
+    color: 'Grey',
+    imagePrimary: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1000&q=80',
+    imageSecondary: 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1000&q=80',
+  },
+];
+
+const formatNPR = (value: number) =>
+  new Intl.NumberFormat('en-NP', {
+    style: 'currency',
+    currency: 'NPR',
+    maximumFractionDigits: 0,
+  }).format(value);
+
+const WHATSAPP_NUMBER = '9779802357901';
+
+export default function ProductGridSection() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(55000);
+  const [material, setMaterial] = useState<'All' | Product['material']>('All');
+  const [rating, setRating] = useState(4.5);
+  const [color, setColor] = useState<'All' | Product['color']>('All');
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        const byPrice = product.price <= maxPrice;
+        const byMaterial = material === 'All' ? true : product.material === material;
+        const byRating = product.rating >= rating;
+        const byColor = color === 'All' ? true : product.color === color;
+        return byPrice && byMaterial && byRating && byColor;
+      }),
+    [maxPrice, material, rating, color],
+  );
+
+  return (
+    <section className="bg-white py-14 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-[700] tracking-tight text-[#1A1A1A] sm:text-3xl">Top Picks for Elite Comfort</h2>
+            <p className="mt-2 text-sm text-black/65">Verified buyers, premium materials, and ergonomic engineering.</p>
+          </div>
+
+          <button
+            type="button"
+            className="inline-flex h-11 min-h-[44px] items-center rounded-xl border border-black/10 px-4 text-sm font-semibold text-[#1A1A1A] hover:bg-black/[0.03]"
+            onClick={() => setDrawerOpen(true)}
+          >
+            Smart Filters
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredProducts.map((product) => (
+            <motion.article
+              key={product.id}
+              className="group relative overflow-hidden rounded-2xl border border-black/8 bg-[#F5F5F7] p-3 transition duration-300 hover:border-white/60 hover:bg-white/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:backdrop-blur-xl"
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              whileHover={{ y: -4 }}
+            >
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
+                <Image
+                  src={product.imagePrimary}
+                  alt={`${product.name} primary view`}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-0"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  loading="lazy"
+                />
+                <Image
+                  src={product.imageSecondary}
+                  alt={`${product.name} angled view`}
+                  fill
+                  className="object-cover opacity-0 transition duration-500 group-hover:opacity-100"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  loading="lazy"
+                />
+
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center opacity-0 transition group-hover:opacity-100">
+                  <motion.a
+                    href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                      `Hello, I want to buy ${product.name}. Please share details.`,
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pointer-events-auto inline-flex h-11 min-h-[44px] items-center rounded-xl bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-lg hover:brightness-110"
+                    aria-label={`Quick buy ${product.name}`}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Quick Buy
+                  </motion.a>
+                </div>
+              </div>
+
+              <div className="px-1 pb-1 pt-4">
+                <h3 className="text-base font-[700] text-[#1A1A1A]">{product.name}</h3>
+
+                <div className="mt-1 flex items-center gap-2 text-sm text-black/65">
+                  <span>⭐ {product.rating}</span>
+                  <span>({product.reviews})</span>
+                  <span className="h-1 w-1 rounded-full bg-black/30" />
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Verified Purchase</span>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between">
+                  <p className="text-lg font-[700] text-[#1A1A1A]">{formatNPR(product.price)}</p>
+                  <p className={`text-xs font-medium ${product.stock <= 3 ? 'text-rose-600' : 'text-black/60'}`}>
+                    {product.stock <= 3 ? `Only ${product.stock} left in Kathmandu` : `${product.stock} in stock`}
+                  </p>
+                </div>
+              </div>
+            </motion.article>
+          ))}
+        </div>
+
+        <AnimatePresence>
+          {drawerOpen && (
+            <motion.div
+              className="fixed inset-0 z-[60] bg-black/40"
+              onClick={() => setDrawerOpen(false)}
+              aria-hidden="true"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {drawerOpen && (
+            <motion.aside
+              className="fixed right-0 top-0 z-[70] h-full w-full max-w-sm bg-white p-5 shadow-2xl"
+              aria-label="Smart filters"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            >
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-[700] text-[#1A1A1A]">Smart Filters</h3>
+            <button
+              type="button"
+              className="inline-flex h-11 min-h-[44px] w-11 items-center justify-center rounded-xl border border-black/15"
+              onClick={() => setDrawerOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="mt-6 space-y-6 text-sm">
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#1A1A1A]">Price up to {formatNPR(maxPrice)}</span>
+              <input
+                type="range"
+                min={20000}
+                max={55000}
+                step={1000}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                className="w-full"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#1A1A1A]">Material</span>
+              <select
+                className="h-11 min-h-[44px] w-full rounded-xl border border-black/15 px-3"
+                value={material}
+                onChange={(e) => setMaterial(e.target.value as 'All' | Product['material'])}
+              >
+                <option value="All">All</option>
+                <option value="Leather">Leather</option>
+                <option value="Mesh">Mesh</option>
+                <option value="Fabric">Fabric</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#1A1A1A]">Ergonomic Rating</span>
+              <select
+                className="h-11 min-h-[44px] w-full rounded-xl border border-black/15 px-3"
+                value={rating}
+                onChange={(e) => setRating(Number(e.target.value))}
+              >
+                <option value={4.5}>4.5+ stars</option>
+                <option value={4.7}>4.7+ stars</option>
+                <option value={4.8}>4.8+ stars</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#1A1A1A]">Color</span>
+              <select
+                className="h-11 min-h-[44px] w-full rounded-xl border border-black/15 px-3"
+                value={color}
+                onChange={(e) => setColor(e.target.value as 'All' | Product['color'])}
+              >
+                <option value="All">All</option>
+                <option value="Black">Black</option>
+                <option value="Grey">Grey</option>
+                <option value="Brown">Brown</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="absolute inset-x-5 bottom-5 flex gap-3">
+            <button
+              type="button"
+              className="inline-flex h-11 min-h-[44px] flex-1 items-center justify-center rounded-xl border border-black/15 font-semibold text-[#1A1A1A]"
+              onClick={() => {
+                setMaxPrice(55000);
+                setMaterial('All');
+                setRating(4.5);
+                setColor('All');
+              }}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-11 min-h-[44px] flex-1 items-center justify-center rounded-xl bg-[#0F766E] font-semibold text-white"
+              onClick={() => setDrawerOpen(false)}
+            >
+              Apply
+            </button>
+          </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
+    </section>
+  );
+}

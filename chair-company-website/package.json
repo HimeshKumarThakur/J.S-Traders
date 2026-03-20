@@ -1,0 +1,40 @@
+{
+  "name": "chair-company-website",
+  "version": "1.0.0",
+  "description": "A website for a multi-billionaire chair company showcasing products and company information.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "images:optimize": "node scripts/optimize-images.mjs",
+    "images:prepare": "npm run images:optimize"
+  },
+  "keywords": [
+    "chairs",
+    "furniture",
+    "ecommerce",
+    "nextjs",
+    "tailwindcss"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "framer-motion": "^12.38.0",
+    "next": "^14.2.35",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "@types/node": "25.5.0",
+    "@types/react": "19.2.14",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
+    "typescript": "^5.9.2"
+  }
+}
