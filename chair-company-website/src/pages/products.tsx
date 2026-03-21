@@ -3,8 +3,14 @@
 import React from 'react';
 import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
-import { AdminProduct, getProductOverrideMap, readAdminProducts } from '../lib/adminProducts';
+import {
+  AdminProduct,
+  fetchAdminData,
+  getProductOverrideMapFromData,
+  getProductsFromData,
+} from '../lib/adminProducts';
 import { categoryGroups, CategoryGroup, createVarieties } from '../lib/siteProducts';
+import ProductPreviewModal from '../components/ProductPreviewModal';
 
 
 type ProductItem = {
@@ -13,6 +19,8 @@ type ProductItem = {
   image: string;
   oldPrice: number;
   price: number;
+  basePrice: number;
+  hasOverride: boolean;
 };
 
 const WHATSAPP_NUMBER = '9779861829728';
@@ -25,14 +33,21 @@ const ProductsPage = () => {
   const [activeSubCategory, setActiveSubCategory] = useState(categoryGroups[0].subcategories[0].name);
   const [adminProducts, setAdminProducts] = useState<AdminProduct[]>([]);
   const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number }>>({});
+  const [selectedPreview, setSelectedPreview] = useState<{ title: string; image: string; price: number } | null>(null);
 
   useEffect(() => {
-    const syncData = () => {
-      setAdminProducts(readAdminProducts());
-      setOverrideMap(getProductOverrideMap());
+    const syncData = async () => {
+      try {
+        const data = await fetchAdminData();
+        setAdminProducts(getProductsFromData(data));
+        setOverrideMap(getProductOverrideMapFromData(data));
+      } catch {
+        setAdminProducts([]);
+        setOverrideMap({});
+      }
     };
 
-    syncData();
+    void syncData();
     window.addEventListener('storage', syncData);
     window.addEventListener('focus', syncData);
     window.addEventListener('js-traders-data-updated', syncData);
@@ -65,6 +80,8 @@ const ProductsPage = () => {
           title: override?.title ?? item.title,
           image: override?.image ?? item.image,
           price: override?.price ?? item.price,
+          basePrice: item.price,
+          hasOverride: Boolean(override),
         };
       }),
     [selectedSubCategory, selectedCategory.id, overrideMap],
@@ -130,22 +147,31 @@ const ProductsPage = () => {
               {activeProducts.map((item) => (
                 <article key={item.id} className="overflow-hidden rounded-2xl border border-black/10 bg-[#F5F5F7] p-3">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      onError={(event) => {
-                        const target = event.currentTarget;
-                        if (target.src !== FALLBACK_IMAGE) target.src = FALLBACK_IMAGE;
-                      }}
-                    />
+                    <button
+                      type="button"
+                      className="block h-full w-full"
+                      onClick={() => setSelectedPreview({ title: item.title, image: item.image, price: item.price })}
+                      aria-label={`Preview ${item.title}`}
+                    >
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          if (target.src !== FALLBACK_IMAGE) target.src = FALLBACK_IMAGE;
+                        }}
+                      />
+                    </button>
                   </div>
 
                   <div className="pt-3">
                     <h4 className="text-sm font-[700] text-[#1A1A1A]">{item.title}</h4>
                     <div className="mt-1 flex items-center gap-2 text-sm">
-                      <span className="text-black/45 line-through">{formatNPR(item.oldPrice)}</span>
+                      {(item.hasOverride ? item.price < item.basePrice : true) && (
+                        <span className="text-black/45 line-through">{formatNPR(item.hasOverride ? item.basePrice : item.oldPrice)}</span>
+                      )}
                       <span className="font-[700] text-[#AD7A00]">{formatNPR(item.price)}</span>
                     </div>
                     <a
@@ -175,16 +201,23 @@ const ProductsPage = () => {
                 {adminProducts.map((item) => (
                   <article key={item.id} className="overflow-hidden rounded-2xl border border-black/10 bg-[#F5F5F7] p-3">
                     <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        onError={(event) => {
-                          const target = event.currentTarget;
-                          if (target.src !== FALLBACK_IMAGE) target.src = FALLBACK_IMAGE;
-                        }}
-                      />
+                      <button
+                        type="button"
+                        className="block h-full w-full"
+                        onClick={() => setSelectedPreview({ title: item.title, image: item.image, price: item.price })}
+                        aria-label={`Preview ${item.title}`}
+                      >
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={(event) => {
+                            const target = event.currentTarget;
+                            if (target.src !== FALLBACK_IMAGE) target.src = FALLBACK_IMAGE;
+                          }}
+                        />
+                      </button>
                     </div>
 
                     <div className="pt-3">
@@ -208,6 +241,19 @@ const ProductsPage = () => {
           )}
         </div>
       </section>
+
+      {selectedPreview && (
+        <ProductPreviewModal
+          isOpen={Boolean(selectedPreview)}
+          title={selectedPreview.title}
+          image={selectedPreview.image}
+          priceLabel={formatNPR(selectedPreview.price)}
+          onClose={() => setSelectedPreview(null)}
+          buyUrl={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+            `Hello, I want to buy ${selectedPreview.title}. Please share details.`,
+          )}`}
+        />
+      )}
     </>
   );
 };

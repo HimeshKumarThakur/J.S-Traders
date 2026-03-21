@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
-import { getProductOverrideMap } from '../lib/adminProducts';
+import { fetchAdminData, getProductOverrideMapFromData } from '../lib/adminProducts';
 import { getTopPickProducts } from '../lib/siteProducts';
+import ProductPreviewModal from './ProductPreviewModal';
 
 type Product = {
   id: string;
@@ -31,6 +32,7 @@ const WHATSAPP_NUMBER = '9779861829728';
 
 export default function ProductGridSection() {
   const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number }>>({});
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [maxPrice, setMaxPrice] = useState(55000);
   const [material, setMaterial] = useState<'All' | Product['material']>('All');
@@ -38,9 +40,16 @@ export default function ProductGridSection() {
   const [color, setColor] = useState<'All' | Product['color']>('All');
 
   useEffect(() => {
-    const syncOverrides = () => setOverrideMap(getProductOverrideMap());
+    const syncOverrides = async () => {
+      try {
+        const data = await fetchAdminData();
+        setOverrideMap(getProductOverrideMapFromData(data));
+      } catch {
+        setOverrideMap({});
+      }
+    };
 
-    syncOverrides();
+    void syncOverrides();
     window.addEventListener('storage', syncOverrides);
     window.addEventListener('focus', syncOverrides);
     window.addEventListener('js-traders-data-updated', syncOverrides);
@@ -113,12 +122,14 @@ export default function ProductGridSection() {
                   alt={`${product.name} primary view`}
                   className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-0"
                   loading="lazy"
+                  onClick={() => setSelectedProductId(product.id)}
                 />
                 <img
                   src={product.imageSecondary}
                   alt={`${product.name} angled view`}
                   className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100"
                   loading="lazy"
+                  onClick={() => setSelectedProductId(product.id)}
                 />
 
                 <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center opacity-0 transition group-hover:opacity-100">
@@ -272,6 +283,19 @@ export default function ProductGridSection() {
             </motion.aside>
           )}
         </AnimatePresence>
+
+        {selectedProductId && (
+          <ProductPreviewModal
+            isOpen={Boolean(selectedProductId)}
+            title={filteredProducts.find((item) => item.id === selectedProductId)?.name ?? 'Product'}
+            image={filteredProducts.find((item) => item.id === selectedProductId)?.imagePrimary ?? ''}
+            priceLabel={formatNPR(filteredProducts.find((item) => item.id === selectedProductId)?.price ?? 0)}
+            onClose={() => setSelectedProductId(null)}
+            buyUrl={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+              `Hello, I want to buy ${filteredProducts.find((item) => item.id === selectedProductId)?.name ?? 'this product'}. Please share details.`,
+            )}`}
+          />
+        )}
       </div>
     </section>
   );

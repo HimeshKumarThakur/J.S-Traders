@@ -3,12 +3,14 @@
 import Head from 'next/head';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
+  AdminProduct,
   addAdminProduct,
   DEFAULT_ADMIN_ID,
   DEFAULT_ADMIN_PASSWORD,
-  getProductOverrideMap,
+  fetchAdminData,
+  getProductOverrideMapFromData,
+  getProductsFromData,
   isAdminLoggedIn,
-  readAdminProducts,
   removeProductOverride,
   removeAdminProduct,
   setAdminSession,
@@ -73,7 +75,7 @@ const AdminPage = () => {
   const [imageUploadData, setImageUploadData] = useState('');
   const [price, setPrice] = useState('');
   const [editingCustomId, setEditingCustomId] = useState<string | null>(null);
-  const [products, setProducts] = useState(readAdminProducts);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
 
   const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number }>>({});
   const [websiteSearch, setWebsiteSearch] = useState('');
@@ -84,9 +86,19 @@ const AdminPage = () => {
   const [editingWebsiteImageUploadData, setEditingWebsiteImageUploadData] = useState('');
 
   useEffect(() => {
+    const syncData = async () => {
+      try {
+        const data = await fetchAdminData();
+        setProducts(getProductsFromData(data));
+        setOverrideMap(getProductOverrideMapFromData(data));
+      } catch {
+        setProducts([]);
+        setOverrideMap({});
+      }
+    };
+
     setIsLoggedIn(isAdminLoggedIn());
-    setProducts(readAdminProducts());
-    setOverrideMap(getProductOverrideMap());
+    void syncData();
   }, []);
 
   const websiteItems = useMemo(() => getAllWebsiteEditableItems(), []);
@@ -139,7 +151,7 @@ const AdminPage = () => {
     setSuccess('');
   };
 
-  const handleAddProduct = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddProduct = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const parsedPrice = Number(price);
@@ -151,19 +163,23 @@ const AdminPage = () => {
     }
 
     try {
+      let data;
       if (editingCustomId) {
-        updateAdminProduct(editingCustomId, {
+        data = await updateAdminProduct(editingCustomId, {
           title: title.trim(),
           image: resolvedImage,
           price: parsedPrice,
         });
       } else {
-        addAdminProduct({
+        data = await addAdminProduct({
           title: title.trim(),
           image: resolvedImage,
           price: parsedPrice,
         });
       }
+
+      setProducts(getProductsFromData(data));
+      setOverrideMap(getProductOverrideMapFromData(data));
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : 'Failed to save product.';
       setError(message);
@@ -174,7 +190,6 @@ const AdminPage = () => {
       window.dispatchEvent(new Event('js-traders-data-updated'));
     }
 
-    setProducts(readAdminProducts());
     setTitle('');
     setImageUrl('');
     setImageUploadData('');
@@ -184,7 +199,7 @@ const AdminPage = () => {
     setSuccess(editingCustomId ? 'Custom product updated.' : 'Custom product saved.');
   };
 
-  const saveWebsiteOverride = (event: FormEvent<HTMLFormElement>) => {
+  const saveWebsiteOverride = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingWebsiteId) return;
 
@@ -197,12 +212,15 @@ const AdminPage = () => {
     }
 
     try {
-      upsertProductOverride({
+      const data = await upsertProductOverride({
         id: editingWebsiteId,
         title: editingWebsiteTitle.trim(),
         image: resolvedImage,
         price: parsedPrice,
       });
+
+      setProducts(getProductsFromData(data));
+      setOverrideMap(getProductOverrideMapFromData(data));
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : 'Failed to save website edit.';
       setError(message);
@@ -213,7 +231,6 @@ const AdminPage = () => {
       window.dispatchEvent(new Event('js-traders-data-updated'));
     }
 
-    setOverrideMap(getProductOverrideMap());
     setEditingWebsiteId(null);
     setEditingWebsiteTitle('');
     setEditingWebsiteImageUrl('');
@@ -416,9 +433,15 @@ const AdminPage = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                removeAdminProduct(item.id);
-                                setProducts(readAdminProducts());
+                              onClick={async () => {
+                                try {
+                                  const data = await removeAdminProduct(item.id);
+                                  setProducts(getProductsFromData(data));
+                                  setOverrideMap(getProductOverrideMapFromData(data));
+                                  setSuccess('Custom product deleted.');
+                                } catch {
+                                  setError('Could not delete custom product.');
+                                }
                               }}
                               className="mt-3 inline-flex h-10 min-h-[40px] items-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-700"
                             >
@@ -473,13 +496,18 @@ const AdminPage = () => {
                             {item.hasOverride && (
                               <button
                                 type="button"
-                                onClick={() => {
-                                  removeProductOverride(item.id);
-                                  setOverrideMap(getProductOverrideMap());
-                                  if (typeof window !== 'undefined') {
-                                    window.dispatchEvent(new Event('js-traders-data-updated'));
+                                onClick={async () => {
+                                  try {
+                                    const data = await removeProductOverride(item.id);
+                                    setProducts(getProductsFromData(data));
+                                    setOverrideMap(getProductOverrideMapFromData(data));
+                                    if (typeof window !== 'undefined') {
+                                      window.dispatchEvent(new Event('js-traders-data-updated'));
+                                    }
+                                    setSuccess('Website product reset to default.');
+                                  } catch {
+                                    setError('Could not reset website product.');
                                   }
-                                  setSuccess('Website product reset to default.');
                                 }}
                                 className="inline-flex h-10 min-h-[40px] items-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-700"
                               >
