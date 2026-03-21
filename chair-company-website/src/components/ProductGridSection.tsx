@@ -1,8 +1,9 @@
 "use client";
 
-import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { getProductOverrideMap } from '../lib/adminProducts';
+import { getTopPickProducts } from '../lib/siteProducts';
 
 type Product = {
   id: string;
@@ -17,80 +18,7 @@ type Product = {
   imageSecondary: string;
 };
 
-const products: Product[] = [
-  {
-    id: 'executive-pro-x1',
-    name: 'Executive Pro X1',
-    price: 48900,
-    rating: 4.9,
-    reviews: 128,
-    stock: 3,
-    material: 'Leather',
-    color: 'Black',
-    imagePrimary: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&w=1000&q=80',
-    imageSecondary: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'mesh-aero-2',
-    name: 'Mesh Aero 2',
-    price: 32900,
-    rating: 4.7,
-    reviews: 94,
-    stock: 7,
-    material: 'Mesh',
-    color: 'Grey',
-    imagePrimary: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1000&q=80',
-    imageSecondary: 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'lumbar-signature',
-    name: 'Lumbar Signature',
-    price: 39900,
-    rating: 4.8,
-    reviews: 112,
-    stock: 2,
-    material: 'Fabric',
-    color: 'Brown',
-    imagePrimary: 'https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=1000&q=80',
-    imageSecondary: 'https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'boardroom-prime',
-    name: 'Boardroom Prime',
-    price: 52900,
-    rating: 4.9,
-    reviews: 86,
-    stock: 4,
-    material: 'Leather',
-    color: 'Brown',
-    imagePrimary: 'https://images.unsplash.com/photo-1519947486511-46149fa0a254?auto=format&fit=crop&w=1000&q=80',
-    imageSecondary: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'studio-task-pro',
-    name: 'Studio Task Pro',
-    price: 26900,
-    rating: 4.6,
-    reviews: 76,
-    stock: 9,
-    material: 'Mesh',
-    color: 'Black',
-    imagePrimary: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=1000&q=80',
-    imageSecondary: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'ergofit-classic',
-    name: 'ErgoFit Classic',
-    price: 29900,
-    rating: 4.7,
-    reviews: 67,
-    stock: 5,
-    material: 'Fabric',
-    color: 'Grey',
-    imagePrimary: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1000&q=80',
-    imageSecondary: 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1000&q=80',
-  },
-];
+const products: Product[] = getTopPickProducts();
 
 const formatNPR = (value: number) =>
   new Intl.NumberFormat('en-NP', {
@@ -102,22 +30,52 @@ const formatNPR = (value: number) =>
 const WHATSAPP_NUMBER = '9779861829728';
 
 export default function ProductGridSection() {
+  const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number }>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [maxPrice, setMaxPrice] = useState(55000);
   const [material, setMaterial] = useState<'All' | Product['material']>('All');
   const [rating, setRating] = useState(4.5);
   const [color, setColor] = useState<'All' | Product['color']>('All');
 
+  useEffect(() => {
+    const syncOverrides = () => setOverrideMap(getProductOverrideMap());
+
+    syncOverrides();
+    window.addEventListener('storage', syncOverrides);
+    window.addEventListener('focus', syncOverrides);
+    window.addEventListener('js-traders-data-updated', syncOverrides);
+
+    return () => {
+      window.removeEventListener('storage', syncOverrides);
+      window.removeEventListener('focus', syncOverrides);
+      window.removeEventListener('js-traders-data-updated', syncOverrides);
+    };
+  }, []);
+
+  const resolvedProducts = useMemo(
+    () =>
+      products.map((product) => {
+        const override = overrideMap[product.id];
+        return {
+          ...product,
+          name: override?.title ?? product.name,
+          price: override?.price ?? product.price,
+          imagePrimary: override?.image ?? product.imagePrimary,
+        };
+      }),
+    [overrideMap],
+  );
+
   const filteredProducts = useMemo(
     () =>
-      products.filter((product) => {
+      resolvedProducts.filter((product) => {
         const byPrice = product.price <= maxPrice;
         const byMaterial = material === 'All' ? true : product.material === material;
         const byRating = product.rating >= rating;
         const byColor = color === 'All' ? true : product.color === color;
         return byPrice && byMaterial && byRating && byColor;
       }),
-    [maxPrice, material, rating, color],
+    [resolvedProducts, maxPrice, material, rating, color],
   );
 
   return (
@@ -150,20 +108,16 @@ export default function ProductGridSection() {
               whileHover={{ y: -4 }}
             >
               <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
-                <Image
+                <img
                   src={product.imagePrimary}
                   alt={`${product.name} primary view`}
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-0"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-0"
                   loading="lazy"
                 />
-                <Image
+                <img
                   src={product.imageSecondary}
                   alt={`${product.name} angled view`}
-                  fill
-                  className="object-cover opacity-0 transition duration-500 group-hover:opacity-100"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100"
                   loading="lazy"
                 />
 
