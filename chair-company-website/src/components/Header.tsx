@@ -12,6 +12,7 @@ const Header: React.FC = () => {
     { href: '/about', label: 'About' },
     { href: '/help', label: 'Help' },
     { href: '/contact', label: 'Contact' },
+    { href: '/admin', label: 'Admin' },
   ];
 
   return (
