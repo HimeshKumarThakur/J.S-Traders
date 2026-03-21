@@ -1,4 +1,8 @@
+"use client";
+
 import Image from 'next/image';
+import { useState } from 'react';
+import ProductPreviewModal from './ProductPreviewModal';
 
 const posts = [
   'https://images.unsplash.com/photo-1486946255434-2466348c2166?auto=format&fit=crop&w=700&q=80',
@@ -10,6 +14,8 @@ const posts = [
 ];
 
 export default function SocialFeed() {
+  const [selectedPost, setSelectedPost] = useState<string | null>(null);
+
   return (
     <section className="bg-[#F5F5F7] py-14 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -19,10 +25,28 @@ export default function SocialFeed() {
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {posts.map((post, i) => (
             <article key={post + i} className="relative aspect-square overflow-hidden rounded-xl border border-black/10 bg-white">
-              <Image src={post} alt={`Workspace post ${i + 1}`} fill className="object-cover" sizes="(max-width: 1024px) 33vw, 16vw" loading="lazy" />
+              <button
+                type="button"
+                className="h-full w-full"
+                onClick={() => setSelectedPost(post)}
+                aria-label={`Preview workspace post ${i + 1}`}
+              >
+                <Image src={post} alt={`Workspace post ${i + 1}`} fill className="object-cover" sizes="(max-width: 1024px) 33vw, 16vw" loading="lazy" />
+              </button>
             </article>
           ))}
         </div>
+
+        {selectedPost && (
+          <ProductPreviewModal
+            isOpen={Boolean(selectedPost)}
+            title="Featured Workspace"
+            image={selectedPost}
+            priceLabel="Explore matching products"
+            onClose={() => setSelectedPost(null)}
+            buyUrl="/products"
+          />
+        )}
       </div>
     </section>
   );

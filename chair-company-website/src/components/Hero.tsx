@@ -4,8 +4,28 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { fetchAdminData, getProductOverrideMapFromData } from '../lib/adminProducts';
+import { getTopPickProducts } from '../lib/siteProducts';
 
 const Hero: React.FC = () => {
+  const featuredProduct = getTopPickProducts()[0];
+  const [featuredImage, setFeaturedImage] = useState(featuredProduct.imagePrimary);
+
+  useEffect(() => {
+    const loadFeatured = async () => {
+      try {
+        const data = await fetchAdminData();
+        const override = getProductOverrideMapFromData(data)[featuredProduct.id];
+        setFeaturedImage(override?.image ?? featuredProduct.imagePrimary);
+      } catch {
+        setFeaturedImage(featuredProduct.imagePrimary);
+      }
+    };
+
+    void loadFeatured();
+  }, [featuredProduct.id, featuredProduct.imagePrimary]);
+
   return (
     <section className="relative overflow-hidden bg-[#F5F5F7]">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-2 lg:gap-12 lg:px-8">
@@ -62,21 +82,23 @@ const Hero: React.FC = () => {
           transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
         >
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_30%,rgba(15,118,110,0.16),transparent_60%)]" />
-          <motion.div
-            className="relative w-full max-w-[560px] rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.15)] backdrop-blur-xl"
-            whileHover={{ y: -6 }}
-            transition={{ type: 'spring', stiffness: 220, damping: 22 }}
-          >
-            <Image
-              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=80"
-              alt="Luxury ergonomic executive chair"
-              width={1200}
-              height={1200}
-              priority
-              className="h-auto w-full rounded-2xl object-cover drop-shadow-[0_24px_40px_rgba(0,0,0,0.22)] transition duration-500 motion-safe:hover:scale-[1.02]"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </motion.div>
+          <Link href={`/products?previewId=${featuredProduct.id}#buy-now-section`} className="block">
+            <motion.div
+              className="relative w-full max-w-[560px] rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.15)] backdrop-blur-xl"
+              whileHover={{ y: -6 }}
+              transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+            >
+              <Image
+                src={featuredImage}
+                alt="Luxury ergonomic executive chair"
+                width={1200}
+                height={1200}
+                priority
+                className="h-auto w-full rounded-2xl object-cover drop-shadow-[0_24px_40px_rgba(0,0,0,0.22)] transition duration-500 motion-safe:hover:scale-[1.02]"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            </motion.div>
+          </Link>
         </motion.div>
       </div>
     </section>

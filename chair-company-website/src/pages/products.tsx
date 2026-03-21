@@ -3,13 +3,14 @@
 import React from 'react';
 import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import {
   AdminProduct,
   fetchAdminData,
   getProductOverrideMapFromData,
   getProductsFromData,
 } from '../lib/adminProducts';
-import { categoryGroups, CategoryGroup, createVarieties } from '../lib/siteProducts';
+import { categoryGroups, CategoryGroup, createVarieties, getTopPickProducts } from '../lib/siteProducts';
 import ProductPreviewModal from '../components/ProductPreviewModal';
 
 
@@ -29,6 +30,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1505693416388-ac5ce068
 const formatNPR = (value: number) => `NPR ${value.toLocaleString('en-NP')}`;
 
 const ProductsPage = () => {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<MainCategory>('chair');
   const [activeSubCategory, setActiveSubCategory] = useState(categoryGroups[0].subcategories[0].name);
   const [adminProducts, setAdminProducts] = useState<AdminProduct[]>([]);
@@ -87,6 +89,40 @@ const ProductsPage = () => {
     [selectedSubCategory, selectedCategory.id, overrideMap],
   );
 
+  useEffect(() => {
+    if (!router.isReady) return;
+    const queryPreviewId = router.query.previewId;
+    if (typeof queryPreviewId !== 'string' || !queryPreviewId.trim()) return;
+
+    const topPick = getTopPickProducts().find((item) => item.id === queryPreviewId);
+    const override = overrideMap[queryPreviewId];
+
+    const fromTopPick = topPick
+      ? {
+          title: override?.title ?? topPick.name,
+          image: override?.image ?? topPick.imagePrimary,
+          price: override?.price ?? topPick.price,
+        }
+      : null;
+
+    const fromActive = activeProducts.find((item) => item.id === queryPreviewId);
+    const fromAdmin = adminProducts.find((item) => item.id === queryPreviewId);
+
+    if (fromActive) {
+      setSelectedPreview({ title: fromActive.title, image: fromActive.image, price: fromActive.price });
+      return;
+    }
+
+    if (fromAdmin) {
+      setSelectedPreview({ title: fromAdmin.title, image: fromAdmin.image, price: fromAdmin.price });
+      return;
+    }
+
+    if (fromTopPick) {
+      setSelectedPreview(fromTopPick);
+    }
+  }, [router.isReady, router.query.previewId, activeProducts, adminProducts, overrideMap]);
+
   return (
     <>
       <Head>
@@ -96,7 +132,7 @@ const ProductsPage = () => {
           content="Browse categorized chair, furniture, and sofa collections with high-quality images and direct WhatsApp ordering."
         />
       </Head>
-      <section className="bg-[#F5F5F7] py-12 sm:py-16">
+      <section id="buy-now-section" className="bg-[#F5F5F7] py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-10">
             <p className="text-xs uppercase tracking-[0.2em] text-[#0F766E]">J.S Traders Product Collections</p>

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import ProductPreviewModal from './ProductPreviewModal';
 
 const tabs = ['Tables', 'Sofas', 'Chairs', 'Furnitures', 'Sale'] as const;
 type Tab = (typeof tabs)[number];
@@ -71,6 +72,7 @@ const tabData: Record<Tab, { title: string; image: string; price: string }[]> = 
 
 export default function CategoryTabsShowcase() {
   const [activeTab, setActiveTab] = useState<Tab>('Tables');
+  const [selectedItem, setSelectedItem] = useState<{ title: string; image: string; price: string } | null>(null);
 
   return (
     <section className="bg-white py-14 sm:py-16">
@@ -96,7 +98,14 @@ export default function CategoryTabsShowcase() {
           {tabData[activeTab].map((item) => (
             <article key={item.title} className="rounded-2xl border border-black/10 bg-[#F5F5F7] p-3">
               <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-white">
-                <Image src={item.image} alt={item.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" loading="lazy" />
+                <button
+                  type="button"
+                  className="h-full w-full"
+                  onClick={() => setSelectedItem(item)}
+                  aria-label={`Preview ${item.title}`}
+                >
+                  <Image src={item.image} alt={item.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" loading="lazy" />
+                </button>
               </div>
               <div className="pt-3">
                 <h3 className="text-base font-[700] text-[#1A1A1A]">{item.title}</h3>
@@ -105,6 +114,19 @@ export default function CategoryTabsShowcase() {
             </article>
           ))}
         </div>
+
+        {selectedItem && (
+          <ProductPreviewModal
+            isOpen={Boolean(selectedItem)}
+            title={selectedItem.title}
+            image={selectedItem.image}
+            priceLabel={selectedItem.price}
+            onClose={() => setSelectedItem(null)}
+            buyUrl={`https://wa.me/9779861829728?text=${encodeURIComponent(
+              `Hello, I want to buy ${selectedItem.title}. Please share details.`,
+            )}`}
+          />
+        )}
       </div>
     </section>
   );

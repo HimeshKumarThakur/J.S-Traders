@@ -22,21 +22,22 @@ const ProductPreviewModal: React.FC<ProductPreviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 px-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-[120] overflow-y-auto bg-black/60 px-4 py-6" role="dialog" aria-modal="true">
+      <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-20 inline-flex h-10 min-h-[40px] w-10 items-center justify-center rounded-lg border border-black/15 bg-white text-[#1A1A1A] shadow-md"
+          aria-label="Close preview"
+        >
+          x
+        </button>
+
         <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
-          <h3 className="text-base font-semibold text-[#1A1A1A]">{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 min-h-[40px] w-10 items-center justify-center rounded-lg border border-black/15 text-[#1A1A1A]"
-            aria-label="Close preview"
-          >
-            x
-          </button>
+          <h3 className="pr-12 text-base font-semibold text-[#1A1A1A]">{title}</h3>
         </div>
 
-        <div className="p-4">
+        <div className="max-h-[78vh] overflow-y-auto p-4">
           <div className="overflow-hidden rounded-xl border border-black/10 bg-[#F5F5F7]">
             <img src={image} alt={title} className="h-auto w-full object-cover" />
           </div>
