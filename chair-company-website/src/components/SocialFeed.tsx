@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductPreviewModal from './ProductPreviewModal';
 import { fetchAdminData, getProductOverrideMapFromData } from '../lib/adminProducts';
 import { getAllWebsiteEditableItems } from '../lib/siteProducts';
@@ -29,7 +29,6 @@ const getBuyUrl = (title: string) =>
 export default function SocialFeed() {
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<GalleryPost | null>(null);
-  const [cursor, setCursor] = useState(0);
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -75,20 +74,7 @@ export default function SocialFeed() {
     };
   }, []);
 
-  useEffect(() => {
-    if (posts.length === 0) return;
-    const timer = window.setInterval(() => {
-      setCursor((current) => (current + 1) % posts.length);
-    }, 3000);
-
-    return () => window.clearInterval(timer);
-  }, [posts]);
-
-  const visiblePosts = useMemo(() => {
-    if (posts.length === 0) return [];
-    const tiles = Math.min(6, posts.length);
-    return Array.from({ length: tiles }, (_, index) => posts[(cursor + index) % posts.length]);
-  }, [cursor, posts]);
+  const visiblePosts = posts.slice(0, Math.min(6, posts.length));
 
   return (
     <section className="bg-[#F5F5F7] py-14 sm:py-16">
