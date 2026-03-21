@@ -177,12 +177,23 @@ export const readAdminDataStore = async (): Promise<AdminData> => {
       console.log('[AdminDataStore] KV read success, data exists:', !!value);
       return normalizeStore(value ?? emptyStore());
     } catch (error) {
-      console.error('[AdminDataStore] KV read failed, falling back to file:', error);
-      // Fall through to file store below
+      console.error('[AdminDataStore] KV read failed:', error);
+      // On Vercel, we MUST use KV - do not fall back to file store
+      if (process.env.VERCEL) {
+        console.error('[AdminDataStore] On Vercel but KV failed - returning empty store!');
+        return emptyStore();
+      }
+      // Fall through to file store only in local dev
     }
   }
 
-  console.log('[AdminDataStore] Falling back to file store...');
+  // Only use file store in local development
+  if (process.env.VERCEL) {
+    console.error('[AdminDataStore] ERROR: On Vercel but KV is not configured!');
+    return emptyStore();
+  }
+
+  console.log('[AdminDataStore] Falling back to file store (local dev)...');
   await ensureStoreFile();
   try {
     const raw = await fs.readFile(storePath, 'utf-8');
@@ -217,12 +228,21 @@ export const writeAdminDataStore = async (data: AdminData) => {
       console.log('[AdminDataStore] KV write success');
       return;
     } catch (error) {
-      console.error('[AdminDataStore] KV write failed, falling back to file:', error);
-      // Fall through to file store below
+      console.error('[AdminDataStore] KV write failed:', error);
+      // On Vercel, we MUST use KV - never fall back to temp file
+      if (process.env.VERCEL) {
+        throw new Error('Failed to write to KV on Vercel - data cannot be persisted!');
+      }
+      // Fall through to file store only in local dev
     }
   }
 
-  console.log('[AdminDataStore] Writing to file store...');
+  // Only use file store in local development
+  if (process.env.VERCEL) {
+    throw new Error('ERROR: On Vercel but KV is not configured! Cannot persist data.');
+  }
+
+  console.log('[AdminDataStore] Writing to file store (local dev)...');
   await ensureStoreFile();
   await fs.writeFile(storePath, JSON.stringify(data, null, 2), 'utf-8');
   console.log('[AdminDataStore] File write success');
