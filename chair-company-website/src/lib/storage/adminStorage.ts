@@ -11,8 +11,12 @@ const storePath = process.env.VERCEL
 
 const emptyStore = (): AdminData => ({ products: [], overrides: [] });
 
+const getRedisRestUrl = () => process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '';
+
+const getRedisRestToken = () => process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '';
+
 const hasUpstashConfig = () =>
-  Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  Boolean(getRedisRestUrl() && getRedisRestToken());
 
 const normalizeStore = (input: unknown): AdminData => {
   if (!input || typeof input !== 'object') return emptyStore();
@@ -75,10 +79,12 @@ let upstashClient: Redis | null = null;
 const getUpstashClient = () => {
   if (upstashClient) return upstashClient;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = getRedisRestUrl();
+  const token = getRedisRestToken();
   if (!url || !token) {
-    throw new Error('Missing UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN');
+    throw new Error(
+      'Missing Redis REST credentials. Set UPSTASH_REDIS_REST_URL/TOKEN or KV_REST_API_URL/TOKEN.',
+    );
   }
 
   upstashClient = new Redis({ url, token });
@@ -161,6 +167,9 @@ export const getAdminStorageInfo = (): {
     UPSTASH_REDIS_REST_URL: boolean;
     UPSTASH_REDIS_REST_TOKEN: boolean;
     UPSTASH_REDIS_REST_READ_ONLY_TOKEN: boolean;
+    KV_REST_API_URL: boolean;
+    KV_REST_API_TOKEN: boolean;
+    KV_REST_API_READ_ONLY_TOKEN: boolean;
   };
   usesEphemeralFileFallbackOnVercel: boolean;
 } => {
@@ -172,6 +181,9 @@ export const getAdminStorageInfo = (): {
       UPSTASH_REDIS_REST_URL: Boolean(process.env.UPSTASH_REDIS_REST_URL),
       UPSTASH_REDIS_REST_TOKEN: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
       UPSTASH_REDIS_REST_READ_ONLY_TOKEN: Boolean(process.env.UPSTASH_REDIS_REST_READ_ONLY_TOKEN),
+      KV_REST_API_URL: Boolean(process.env.KV_REST_API_URL),
+      KV_REST_API_TOKEN: Boolean(process.env.KV_REST_API_TOKEN),
+      KV_REST_API_READ_ONLY_TOKEN: Boolean(process.env.KV_REST_API_READ_ONLY_TOKEN),
     },
     usesEphemeralFileFallbackOnVercel: Boolean(process.env.VERCEL) && !configured,
   };

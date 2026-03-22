@@ -13,6 +13,9 @@ type ResponseData = {
     UPSTASH_REDIS_REST_URL: boolean;
     UPSTASH_REDIS_REST_TOKEN: boolean;
     UPSTASH_REDIS_REST_READ_ONLY_TOKEN: boolean;
+    KV_REST_API_URL: boolean;
+    KV_REST_API_TOKEN: boolean;
+    KV_REST_API_READ_ONLY_TOKEN: boolean;
   };
   currentData: {
     products: number;
@@ -56,6 +59,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         UPSTASH_REDIS_REST_URL: storageInfo.env.UPSTASH_REDIS_REST_URL,
         UPSTASH_REDIS_REST_TOKEN: storageInfo.env.UPSTASH_REDIS_REST_TOKEN,
         UPSTASH_REDIS_REST_READ_ONLY_TOKEN: storageInfo.env.UPSTASH_REDIS_REST_READ_ONLY_TOKEN,
+        KV_REST_API_URL: storageInfo.env.KV_REST_API_URL,
+        KV_REST_API_TOKEN: storageInfo.env.KV_REST_API_TOKEN,
+        KV_REST_API_READ_ONLY_TOKEN: storageInfo.env.KV_REST_API_READ_ONLY_TOKEN,
       },
       currentData: {
         products: data.products.length,
@@ -68,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           ? kvProbe.success
             ? `Upstash probe succeeded. Found ${data.products.length} products and ${data.overrides.length} overrides.`
             : `Upstash probe failed. Found ${data.products.length} products and ${data.overrides.length} overrides.`
-          : `Upstash probe skipped (UPSTASH_REDIS_REST_URL/TOKEN not configured). Found ${data.products.length} products and ${data.overrides.length} overrides.`
+          : `Upstash probe skipped (set UPSTASH_REDIS_REST_URL/TOKEN or KV_REST_API_URL/TOKEN). Found ${data.products.length} products and ${data.overrides.length} overrides.`
         : `Great! Data store is working. Found ${data.products.length} products and ${data.overrides.length} overrides.`,
     });
   } catch (error) {
@@ -84,6 +90,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         UPSTASH_REDIS_REST_URL: Boolean(process.env.UPSTASH_REDIS_REST_URL),
         UPSTASH_REDIS_REST_TOKEN: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
         UPSTASH_REDIS_REST_READ_ONLY_TOKEN: Boolean(process.env.UPSTASH_REDIS_REST_READ_ONLY_TOKEN),
+        KV_REST_API_URL: Boolean(process.env.KV_REST_API_URL),
+        KV_REST_API_TOKEN: Boolean(process.env.KV_REST_API_TOKEN),
+        KV_REST_API_READ_ONLY_TOKEN: Boolean(process.env.KV_REST_API_READ_ONLY_TOKEN),
       },
       currentData: {
         products: 0,
