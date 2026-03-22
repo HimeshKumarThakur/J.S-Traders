@@ -3,7 +3,7 @@ import type { AdminData, AdminProduct, ProductOverride } from '../types/adminDat
 export const ADMIN_SESSION_STORAGE_KEY = 'js_traders_admin_session_v1';
 
 export const DEFAULT_ADMIN_ID = process.env.NEXT_PUBLIC_ADMIN_ID ?? 'admin';
-export const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? '1234';
+export const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? '9760';
 
 const isBrowser = () => typeof window !== 'undefined';
 const emptyData: AdminData = { products: [], overrides: [] };
