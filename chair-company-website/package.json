@@ -21,9 +21,8 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "@vercel/kv": "^3.0.0",
+    "@upstash/redis": "^1.35.3",
     "framer-motion": "^12.38.0",
-    "mysql2": "^3.20.0",
     "next": "^14.2.35",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
