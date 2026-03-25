@@ -20,6 +20,8 @@ const normalizeStore = (input: unknown): AdminData => {
   const maybe = input as Partial<AdminData>;
   const products = Array.isArray(maybe.products) ? maybe.products : [];
   const overrides = Array.isArray(maybe.overrides) ? maybe.overrides : [];
+  const subcategoryOverrides = Array.isArray(maybe.subcategoryOverrides) ? maybe.subcategoryOverrides : [];
+  const customSubcategories = Array.isArray(maybe.customSubcategories) ? maybe.customSubcategories : [];
 
   const normalizedProducts = products.flatMap((item) => {
     if (
@@ -58,6 +60,8 @@ const normalizeStore = (input: unknown): AdminData => {
   return {
     products: normalizedProducts,
     overrides: normalizedOverrides,
+    subcategoryOverrides,
+    customSubcategories,
   };
 };
 

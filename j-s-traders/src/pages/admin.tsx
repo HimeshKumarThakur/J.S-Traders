@@ -1,4 +1,66 @@
+
 "use client";
+
+// AddSubcategoryForm: Allows admin to add a new subcategory to a category
+import { useRef } from 'react';
+
+const AddSubcategoryForm = () => {
+  const [categoryId, setCategoryId] = useState(categoryGroups[0]?.id || 'chair');
+  const [subcategoryName, setSubcategoryName] = useState('');
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleAdd = async (e: FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+    if (!subcategoryName.trim()) {
+      setFormError('Subcategory name cannot be empty.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'addCustomSubcategory', payload: { categoryId, name: subcategoryName.trim() } }),
+      });
+      if (!res.ok) throw new Error('Failed to add subcategory.');
+      setFormSuccess('Subcategory added!');
+      setSubcategoryName('');
+      if (inputRef.current) inputRef.current.focus();
+      window.dispatchEvent(new Event('js-traders-data-updated'));
+    } catch (err) {
+      setFormError('Failed to add subcategory.');
+    }
+  };
+
+  return (
+    <form onSubmit={handleAdd} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <select
+        value={categoryId}
+        onChange={e => setCategoryId(e.target.value as 'chair' | 'furniture' | 'chair-parts')}
+        className="rounded-lg border border-black/15 px-3 py-2 bg-white"
+      >
+        {categoryGroups.map(group => (
+          <option key={group.id} value={group.id}>{group.title.replace(/^[0-9]+\.\s*/, '')}</option>
+        ))}
+      </select>
+      <input
+        ref={inputRef}
+        type="text"
+        value={subcategoryName}
+        onChange={e => setSubcategoryName(e.target.value)}
+        className="rounded-lg border border-black/15 px-3 py-2 flex-1"
+        placeholder="New subcategory name"
+        required
+      />
+      <button type="submit" className="rounded-lg bg-[#0F766E] px-4 py-2 text-white font-semibold">Add</button>
+      {formError && <span className="text-rose-600 text-xs ml-2">{formError}</span>}
+      {formSuccess && <span className="text-emerald-700 text-xs ml-2">{formSuccess}</span>}
+    </form>
+  );
+};
 
 import Head from 'next/head';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -9,6 +71,7 @@ import {
   DEFAULT_ADMIN_PASSWORD,
   fetchAdminData,
   getProductOverrideMapFromData,
+  getSubcategoryOverrideMapFromData,
   getProductsFromData,
   isAdminLoggedIn,
   removeProductOverride,
@@ -16,6 +79,7 @@ import {
   setAdminSession,
   updateAdminProduct,
   upsertProductOverride,
+  upsertSubcategoryOverride,
 } from '../lib/adminProducts';
 import { getAllWebsiteEditableItems, categoryGroups } from '../lib/siteProducts';
 
@@ -80,6 +144,8 @@ const AdminPage = () => {
   const [products, setProducts] = useState<AdminProduct[]>([]);
 
   const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number; soldOut: boolean }>>({});
+  const [subcategoryOverrideMap, setSubcategoryOverrideMap] = useState<Record<string, string>>({});
+  
   const [websiteSearch, setWebsiteSearch] = useState('');
   const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
   const [editingWebsiteTitle, setEditingWebsiteTitle] = useState('');
@@ -88,15 +154,20 @@ const AdminPage = () => {
   const [editingWebsiteImageUploadData, setEditingWebsiteImageUploadData] = useState('');
   const [editingWebsiteSoldOut, setEditingWebsiteSoldOut] = useState(false);
 
+  const [editingSubcategoryId, setEditingSubcategoryId] = useState<string | null>(null);
+  const [editingSubcategoryName, setEditingSubcategoryName] = useState('');
+
   useEffect(() => {
     const syncData = async () => {
       try {
         const data = await fetchAdminData();
         setProducts(getProductsFromData(data));
         setOverrideMap(getProductOverrideMapFromData(data));
+        setSubcategoryOverrideMap(getSubcategoryOverrideMapFromData(data));
       } catch {
         setProducts([]);
         setOverrideMap({});
+        setSubcategoryOverrideMap({});
       }
     };
 
@@ -252,6 +323,33 @@ const AdminPage = () => {
     setSuccess('Website product updated successfully.');
   };
 
+  const handleSubcategorySubmit = async (e: FormEvent, originalName: string) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!editingSubcategoryName.trim()) {
+      setError('Subcategory name cannot be empty.');
+      return;
+    }
+
+    try {
+      const data = await upsertSubcategoryOverride({
+        originalName,
+        newName: editingSubcategoryName.trim(),
+      });
+      setSubcategoryOverrideMap(getSubcategoryOverrideMapFromData(data));
+      setEditingSubcategoryId(null);
+      setEditingSubcategoryName('');
+      setSuccess(`Subcategory "${originalName}" updated successfully.`);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('js-traders-data-updated'));
+      }
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to update subcategory.');
+    }
+  };
+
   return (
     <>
       <Head>
@@ -384,11 +482,17 @@ const AdminPage = () => {
                     >
                       {categoryGroups.map((group) => (
                         <optgroup key={group.id} label={group.title.replace(/^\d+\.\s*/, '')}>
-                          {group.subcategories.map((subType) => (
-                            <option key={subType.name} value={subType.name}>
-                              {subType.name}
+                          {group.subcategories.length > 0 ? (
+                            group.subcategories.map((subType) => (
+                              <option key={subType.name} value={subType.name}>
+                                {subcategoryOverrideMap[subType.name] || subType.name}
+                              </option>
+                            ))
+                          ) : (
+                            <option value={group.title.replace(/^\d+\.\s*/, '')}>
+                              {group.title.replace(/^\d+\.\s*/, '')}
                             </option>
-                          ))}
+                          )}
                         </optgroup>
                       ))}
                     </select>
@@ -498,7 +602,74 @@ const AdminPage = () => {
                   )}
                 </div>
 
-                <div>
+
+                <div className="border-t border-black/10 pt-8">
+                  <h2 className="text-lg font-[700] text-[#1A1A1A]">Edit Subcategory Names</h2>
+                  <p className="mt-2 text-sm text-black/60">Customize the subcategory names shown on the products page. The category is shown in parentheses.</p>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {categoryGroups.flatMap(group => group.subcategories.map(subCategory => ({ group, subCategory }))).map(({ group, subCategory }) => {
+                      const id = subCategory.name;
+                      const displayName = subcategoryOverrideMap[id] || id;
+                      const isEditing = editingSubcategoryId === id;
+                      return (
+                        <div key={id} className="rounded-xl border border-black/10 bg-[#F5F5F7] p-4 text-sm">
+                          {!isEditing ? (
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-[#1A1A1A]">{displayName} <span className="text-xs font-normal text-black/50 ml-1">({group.title.replace(/^[0-9]+\.\s*/, '')} &gt; {id})</span></span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSubcategoryId(id);
+                                  setEditingSubcategoryName(displayName);
+                                  setError('');
+                                  setSuccess('');
+                                }}
+                                className="inline-flex h-8 items-center rounded-lg border border-black/15 bg-white px-3 text-xs font-medium text-[#1A1A1A]"
+                              >
+                                Rename
+                              </button>
+                            </div>
+                          ) : (
+                            <form onSubmit={(e) => handleSubcategorySubmit(e, id)} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={editingSubcategoryName}
+                                onChange={(e) => setEditingSubcategoryName(e.target.value)}
+                                className="h-9 w-full rounded-lg border border-black/15 px-3"
+                                placeholder="New name"
+                                required
+                              />
+                              <button
+                                type="submit"
+                                className="inline-flex h-9 items-center rounded-lg bg-[#0F766E] px-3 font-medium text-white"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSubcategoryId(null);
+                                  setEditingSubcategoryName('');
+                                }}
+                                className="inline-flex h-9 items-center rounded-lg border border-black/15 bg-white px-3 font-medium text-[#1A1A1A]"
+                              >
+                                Cancel
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add New Subcategory Section */}
+                  <div className="mt-8">
+                    <h3 className="text-md font-semibold mb-2">Add New Subcategory</h3>
+                    <AddSubcategoryForm />
+                  </div>
+                </div>
+
+                <div className="border-t border-black/10 pt-8">
                   <h2 className="text-lg font-[700] text-[#1A1A1A]">Edit Website Listed Products</h2>
                   <p className="mt-2 text-sm text-black/60">You can edit product name, image, and price for products already shown on the website.</p>
                   <div className="mt-3">

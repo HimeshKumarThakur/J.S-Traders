@@ -1,0 +1,36 @@
+{
+  "products": [],
+  "overrides": [
+    {
+      "id": "best-vertex-mesh-pro",
+      "title": "Vertex Mesh",
+      "image": "https://images.unsplash.com/photo-1596079890744-c1a0462d0975?auto=format&fit=crop&w=900&q=80",
+      "price": 13000,
+      "soldOut": false,
+      "updatedAt": "2026-03-25T17:26:46.711Z"
+    }
+  ],
+  "subcategoryOverrides": [
+    {
+      "originalName": "Revolving Chair",
+      "newName": "Revolving",
+      "updatedAt": "2026-03-25T17:34:51.545Z"
+    },
+    {
+      "originalName": "Computer Chair",
+      "newName": "rolllex",
+      "updatedAt": "2026-03-25T17:20:25.140Z"
+    },
+    {
+      "originalName": "Work Station",
+      "newName": "Rollex",
+      "updatedAt": "2026-03-25T16:21:49.251Z"
+    }
+  ],
+  "customSubcategories": [
+    {
+      "categoryId": "chair",
+      "name": "typo"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { readAdminDataStore, writeAdminDataStore } from '../../lib/adminDataStore';
-import type { AdminProduct, ProductOverride } from '../../types/adminData';
+import type { AdminProduct, ProductOverride, SubcategoryOverride } from '../../types/adminData';
 
 export const config = {
   api: {
@@ -15,7 +15,9 @@ type ActionBody =
   | { type: 'updateProduct'; id: string; payload: Omit<AdminProduct, 'id' | 'createdAt'> }
   | { type: 'removeProduct'; id: string }
   | { type: 'upsertOverride'; payload: Omit<ProductOverride, 'updatedAt'> }
-  | { type: 'removeOverride'; id: string };
+  | { type: 'removeOverride'; id: string }
+  | { type: 'upsertSubcategoryOverride'; payload: Omit<SubcategoryOverride, 'updatedAt'> }
+  | { type: 'addCustomSubcategory'; payload: { categoryId: string; name: string } };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -107,6 +109,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return;
       }
 
+      case 'upsertSubcategoryOverride': {
+        const nextOverride: SubcategoryOverride = {
+          ...body.payload,
+          updatedAt: new Date().toISOString(),
+        };
+
+        const existingOverrides = current.subcategoryOverrides ?? [];
+        const exists = existingOverrides.some((item) => item.originalName === body.payload.originalName);
+
+        const subcategoryOverrides = exists
+          ? existingOverrides.map((item) => (item.originalName === body.payload.originalName ? nextOverride : item))
+          : [nextOverride, ...existingOverrides];
+
+        const updated = { ...current, subcategoryOverrides };
+        await writeAdminDataStore(updated);
+        res.status(200).json(updated);
+        return;
+      }
+
+      case 'addCustomSubcategory': {
+        const customSubcategories = Array.isArray(current.customSubcategories) ? [...current.customSubcategories] : [];
+        customSubcategories.push({
+          categoryId: body.payload.categoryId,
+          name: body.payload.name,
+        });
+        const updated = { ...current, customSubcategories };
+        await writeAdminDataStore(updated);
+        res.status(200).json(updated);
+        return;
+      }
       default:
         res.status(400).send('Invalid request payload');
     }

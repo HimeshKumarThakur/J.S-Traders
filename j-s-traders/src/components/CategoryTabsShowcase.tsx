@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import ProductPreviewModal from './ProductPreviewModal';
 
-const tabs = ['Tables', 'Sofas', 'Chairs', 'Furnitures', 'Sale'] as const;
+const tabs = ['Tables', 'Chair Parts', 'Chairs', 'Furnitures'] as const;
 type Tab = (typeof tabs)[number];
 
 const tabData: Record<Tab, { title: string; image: string; price: string }[]> = {
@@ -20,16 +20,16 @@ const tabData: Record<Tab, { title: string; image: string; price: string }[]> = 
       price: 'NPR 45,000',
     },
   ],
-  Sofas: [
+  'Chair Parts': [
     {
-      title: 'Lounge Fabric Sofa',
+      title: 'Hydraulic Base',
       image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1000&q=80',
-      price: 'NPR 62,000',
+      price: 'NPR 3,000',
     },
     {
-      title: 'Minimal Corner Sofa',
+      title: 'PU Wheels',
       image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1000&q=80',
-      price: 'NPR 58,000',
+      price: 'NPR 1,200',
     },
   ],
   Chairs: [
@@ -56,18 +56,6 @@ const tabData: Record<Tab, { title: string; image: string; price: string }[]> = 
       price: 'NPR 39,000',
     },
   ],
-  Sale: [
-    {
-      title: 'Executive Brown DL40',
-      image: 'https://images.unsplash.com/photo-1551298370-9d3d53740c72?auto=format&fit=crop&w=1000&q=80',
-      price: 'NPR 9,500',
-    },
-    {
-      title: 'Compact Task Chair',
-      image: 'https://images.unsplash.com/photo-1600494603989-9650cf6ddd3d?auto=format&fit=crop&w=1000&q=80',
-      price: 'NPR 4,800',
-    },
-  ],
 };
 
 export default function CategoryTabsShowcase() {
@@ -77,7 +65,7 @@ export default function CategoryTabsShowcase() {
   return (
     <section className="bg-white py-14 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-[700] tracking-tight text-[#1A1A1A] sm:text-3xl">Sofas and office essentials for every setup</h2>
+        <h2 className="text-2xl font-[700] tracking-tight text-[#1A1A1A] sm:text-3xl">Chair Parts and office essentials for every setup</h2>
 
         <div className="mt-5 flex flex-wrap gap-2">
           {tabs.map((tab) => (

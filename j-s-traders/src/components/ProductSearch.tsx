@@ -42,7 +42,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ searchQuery, onSearchChan
         </div>
         {searchQuery && (
           <div className="text-sm text-black/60">
-            <span className="font-semibold">Tip:</span> Try searching "chair", "sofa", "wood", or specific product names
+            <span className="font-semibold">Tip:</span> Try searching "chair", "wood", or specific product names
           </div>
         )}
       </div>

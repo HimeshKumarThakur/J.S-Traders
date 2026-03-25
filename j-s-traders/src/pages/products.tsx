@@ -8,9 +8,10 @@ import {
   AdminProduct,
   fetchAdminData,
   getProductOverrideMapFromData,
+  getSubcategoryOverrideMapFromData,
   getProductsFromData,
 } from '../lib/adminProducts';
-import { categoryGroups, CategoryGroup, createVarieties, getTopPickProducts } from '../lib/siteProducts';
+import { categoryGroups as staticCategoryGroups, CategoryGroup, createVarieties, getTopPickProducts } from '../lib/siteProducts';
 import ProductPreviewModal from '../components/ProductPreviewModal';
 import ProductSearch from '../components/ProductSearch';
 
@@ -34,9 +35,11 @@ const formatNPR = (value: number) => `NPR ${value.toLocaleString('en-NP')}`;
 const ProductsPage = () => {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<MainCategory>('chair');
-  const [activeSubCategory, setActiveSubCategory] = useState(categoryGroups[0].subcategories[0].name);
+  const [activeSubCategory, setActiveSubCategory] = useState(staticCategoryGroups[0].subcategories[0].name);
   const [adminProducts, setAdminProducts] = useState<AdminProduct[]>([]);
   const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number; soldOut: boolean }>>({});
+  const [subcategoryOverrideMap, setSubcategoryOverrideMap] = useState<Record<string, string>>({});
+  const [customSubcategories, setCustomSubcategories] = useState<{ categoryId: string; name: string }[]>([]);
   const [selectedPreview, setSelectedPreview] = useState<{ title: string; image: string; price: number; soldOut: boolean } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -46,9 +49,12 @@ const ProductsPage = () => {
         const data = await fetchAdminData();
         setAdminProducts(getProductsFromData(data));
         setOverrideMap(getProductOverrideMapFromData(data));
+        setSubcategoryOverrideMap(getSubcategoryOverrideMapFromData(data));
+        setCustomSubcategories(Array.isArray(data.customSubcategories) ? data.customSubcategories : []);
       } catch {
         setAdminProducts([]);
         setOverrideMap({});
+        setSubcategoryOverrideMap({});
       }
     };
 
@@ -64,21 +70,43 @@ const ProductsPage = () => {
     };
   }, []);
 
+  // Merge customSubcategories into staticCategoryGroups
+  const mergedCategoryGroups = useMemo(() => {
+    return staticCategoryGroups.map(group => {
+      const customs = customSubcategories.filter(cs => cs.categoryId === group.id).map(cs => ({ name: cs.name, basePrice: 0 }));
+      return { ...group, subcategories: [...group.subcategories, ...customs] };
+    });
+  }, [customSubcategories]);
+
   const selectedCategory = useMemo(
-    () => categoryGroups.find((group) => group.id === activeCategory) ?? categoryGroups[0],
-    [activeCategory],
+    () => mergedCategoryGroups.find((group) => group.id === activeCategory) ?? mergedCategoryGroups[0],
+    [activeCategory, mergedCategoryGroups],
   );
 
   const selectedSubCategory = useMemo(
     () =>
       selectedCategory.subcategories.find((subCategory) => subCategory.name === activeSubCategory) ??
-      selectedCategory.subcategories[0],
+      selectedCategory.subcategories[0] ?? null,
     [selectedCategory, activeSubCategory],
   );
 
   const activeProducts = useMemo(
-    () =>
-      createVarieties(selectedSubCategory, selectedCategory.id).map((item): ProductItem => {
+    () => {
+      const categoryFilter = selectedSubCategory ? selectedSubCategory.name : selectedCategory.title.replace(/^\d+\.\s*/, '');
+      const customProducts = adminProducts.filter((p) => p.category === categoryFilter).map((item): ProductItem => ({
+        id: item.id,
+        title: item.title,
+        image: item.image,
+        oldPrice: item.price,
+        price: item.price,
+        basePrice: item.price,
+        soldOut: Boolean(item.soldOut),
+        hasOverride: false,
+      }));
+
+      if (!selectedSubCategory) return customProducts;
+
+      const generated = createVarieties(selectedSubCategory, selectedCategory.id).map((item): ProductItem => {
         const override = overrideMap[item.id];
         return {
           ...item,
@@ -89,8 +117,11 @@ const ProductsPage = () => {
           soldOut: override?.soldOut ?? false,
           hasOverride: Boolean(override),
         };
-      }),
-    [selectedSubCategory, selectedCategory.id, overrideMap],
+      });
+
+      return [...customProducts, ...generated];
+    },
+    [selectedSubCategory, selectedCategory.id, selectedCategory.title, overrideMap, adminProducts],
   );
 
   const searchResults = useMemo(() => {
@@ -100,7 +131,7 @@ const ProductsPage = () => {
     const allProducts: ProductItem[] = [];
 
     // Add category products
-    categoryGroups.forEach((group) => {
+    mergedCategoryGroups.forEach((group) => {
       group.subcategories.forEach((subCat) => {
         createVarieties(subCat, group.id).forEach((item) => {
           const override = overrideMap[item.id];
@@ -179,7 +210,7 @@ const ProductsPage = () => {
         <title>Shop Ergonomic Chairs | J.S Traders Products</title>
         <meta
           name="description"
-          content="Browse categorized chair, furniture, and sofa collections with high-quality images and direct WhatsApp ordering."
+          content="Browse categorized chair, furniture, and chair parts collections with high-quality images and direct WhatsApp ordering."
         />
       </Head>
       <section id="buy-now-section" className="bg-[#F5F5F7] py-12 sm:py-16">
@@ -189,13 +220,13 @@ const ProductsPage = () => {
             <h1 className="mt-3 text-3xl font-[700] tracking-tight text-[#1A1A1A] sm:text-4xl">Browse by Category</h1>
 
             <div className="mt-6 grid grid-cols-1 gap-2 border-b border-black/10 pb-3 sm:grid-cols-3">
-              {categoryGroups.map((group) => (
+              {mergedCategoryGroups.map((group) => (
                 <button
                   key={group.id}
                   type="button"
                   onClick={() => {
                     setActiveCategory(group.id as MainCategory);
-                    setActiveSubCategory(group.subcategories[0].name);
+                    setActiveSubCategory(group.subcategories.length > 0 ? group.subcategories[0].name : '');
                   }}
                   className={`inline-flex h-11 min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
                     activeCategory === group.id ? 'bg-[#0F766E] text-white' : 'border border-black/15 bg-[#F5F5F7] text-[#1A1A1A]'
@@ -291,27 +322,37 @@ const ProductsPage = () => {
                 <p className="mt-2 text-sm text-black/65">{selectedCategory.subtitle}</p>
 
                 <div className="mt-6 flex flex-wrap gap-2 border-b border-black/10 pb-3">
-                  {selectedCategory.subcategories.map((subCategory) => (
-                    <button
-                      key={subCategory.name}
-                      type="button"
-                      onClick={() => setActiveSubCategory(subCategory.name)}
-                      className={`inline-flex h-11 min-h-[44px] items-center rounded-xl px-4 text-sm font-semibold transition ${
-                        activeSubCategory === subCategory.name
-                          ? 'bg-[#1A1A1A] text-white'
-                          : 'border border-black/15 bg-[#F5F5F7] text-[#1A1A1A]'
-                      }`}
-                    >
-                      {subCategory.name}
-                    </button>
-                  ))}
+                  {selectedCategory.subcategories.map((subCategory) => {
+                    const displayName = subcategoryOverrideMap[subCategory.name] || subCategory.name;
+                    return (
+                      <button
+                        key={subCategory.name}
+                        type="button"
+                        onClick={() => setActiveSubCategory(subCategory.name)}
+                        className={`inline-flex h-11 min-h-[44px] items-center rounded-xl px-4 text-sm font-semibold transition ${
+                          activeSubCategory === subCategory.name
+                            ? 'bg-[#1A1A1A] text-white'
+                            : 'border border-black/15 bg-[#F5F5F7] text-[#1A1A1A]'
+                        }`}
+                      >
+                        {displayName}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <h3 className="mt-5 text-lg font-[700] text-[#1A1A1A]">{selectedSubCategory.name}</h3>
+                {selectedSubCategory ? (
+                  <h3 className="mt-5 text-lg font-[700] text-[#1A1A1A]">
+                    {subcategoryOverrideMap[selectedSubCategory.name] || selectedSubCategory.name}
+                  </h3>
+                ) : (
+                  <h3 className="mt-5 text-lg font-[700] text-[#1A1A1A]">Custom Products</h3>
+                )}
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                  {activeProducts.map((item) => (
-                    <article key={item.id} className="overflow-hidden rounded-2xl border border-black/10 bg-[#F5F5F7] p-3">
-                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
+                  {activeProducts.length > 0 ? (
+                    activeProducts.map((item) => (
+                      <article key={item.id} className="overflow-hidden rounded-2xl border border-black/10 bg-[#F5F5F7] p-3">
+                        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
                         <button
                           type="button"
                           className="block h-full w-full"
@@ -354,65 +395,14 @@ const ProductsPage = () => {
                         </a>
                       </div>
                     </article>
-                  ))}
+                  ))
+                ) : (
+                  <div className="col-span-full py-12 text-center text-black/60">
+                    No products currently mapped for this category.
+                  </div>
+                )}
                 </div>
               </div>
-
-              {adminProducts.length > 0 && (
-                <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
-                  <div>
-                    <h2 className="text-2xl font-[700] tracking-tight text-[#1A1A1A] sm:text-3xl">Latest Products</h2>
-                    <p className="mt-2 text-sm text-black/65">Recently added products.</p>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {adminProducts.map((item) => (
-                      <article key={item.id} className="overflow-hidden rounded-2xl border border-black/10 bg-[#F5F5F7] p-3">
-                        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
-                          <button
-                            type="button"
-                            className="block h-full w-full"
-                            onClick={() => setSelectedPreview({ title: item.title, image: item.image, price: item.price, soldOut: item.soldOut })}
-                            aria-label={`Preview ${item.title}`}
-                          >
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                              onError={(event) => {
-                                const target = event.currentTarget;
-                                if (target.src !== FALLBACK_IMAGE) target.src = FALLBACK_IMAGE;
-                              }}
-                            />
-                          </button>
-                        </div>
-
-                        <div className="pt-3">
-                          <h3 className="text-sm font-[700] text-[#1A1A1A]">{item.title}</h3>
-                          <p className="mt-1 text-sm font-[700] text-[#AD7A00]">NPR {item.price.toLocaleString('en-NP')}</p>
-                          {item.soldOut && (
-                            <p className="mt-1 inline-flex rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">Sold Out</p>
-                          )}
-                          <a
-                            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                              `Hello, I want to buy ${item.title}. Please share details.`,
-                            )}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={`mt-3 inline-flex h-11 min-h-[44px] items-center rounded-xl px-4 text-sm font-semibold text-white ${item.soldOut ? 'cursor-not-allowed bg-rose-400' : 'bg-[#0F766E]'}`}
-                            onClick={(event) => {
-                              if (item.soldOut) event.preventDefault();
-                            }}
-                          >
-                            {item.soldOut ? 'Sold Out' : 'Buy Now'}
-                          </a>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>

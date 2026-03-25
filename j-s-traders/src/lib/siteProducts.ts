@@ -35,7 +35,7 @@ export type SubCategory = {
 };
 
 export type CategoryGroup = {
-  id: 'chair' | 'furniture' | 'sofa';
+  id: 'chair' | 'furniture' | 'chair-parts';
   title: string;
   subtitle: string;
   subcategories: SubCategory[];
@@ -57,14 +57,6 @@ const furniturePhotos = [
   'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=900&h=700&fit=crop',
 ];
 
-const sofaPhotos = [
-  'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&h=700&fit=crop',
-  'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=900&h=700&fit=crop',
-  'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=700&fit=crop',
-  'https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=900&h=700&fit=crop',
-  'https://images.unsplash.com/photo-1493666438817-866a91353ca9?w=900&h=700&fit=crop',
-];
-
 const productImages: Record<string, string[]> = {
   'computer-chair': chairPhotos,
   'gaming-chair': chairPhotos,
@@ -82,8 +74,6 @@ const productImages: Record<string, string[]> = {
   'office-furniture': furniturePhotos,
   'work-station': furniturePhotos,
   'shoe-rack': furniturePhotos,
-  'home-sofa': sofaPhotos,
-  'office-sofa': sofaPhotos,
 };
 
 const chairSubcategories: SubCategory[] = [
@@ -108,10 +98,7 @@ const furnitureSubcategories: SubCategory[] = [
   { name: 'Shoe Rack', basePrice: 12000 },
 ];
 
-const sofaSubcategories: SubCategory[] = [
-  { name: 'Home Sofa', basePrice: 52000 },
-  { name: 'Office Sofa', basePrice: 48000 },
-];
+const chairPartsSubcategories: SubCategory[] = [];
 
 export const categoryGroups: CategoryGroup[] = [
   {
@@ -127,10 +114,10 @@ export const categoryGroups: CategoryGroup[] = [
     subcategories: furnitureSubcategories,
   },
   {
-    id: 'sofa',
-    title: '3. SOFA',
-    subtitle: 'Comfort-first sofa options for home and office settings.',
-    subcategories: sofaSubcategories,
+    id: 'chair-parts',
+    title: '3. CHAIR PARTS',
+    subtitle: 'Spare parts and accessories for various chairs.',
+    subcategories: chairPartsSubcategories,
   },
 ];
 
@@ -251,7 +238,7 @@ export const getTopPickProducts = (): TopPickProduct[] => [
 export const createVarieties = (subCategory: SubCategory, categoryPrefix: CategoryGroup['id']): ProductVariety[] => {
   const imageKey = subCategory.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const fallbackImages = productImages[
-    categoryPrefix === 'sofa' ? 'home-sofa' : categoryPrefix === 'furniture' ? 'office-furniture' : 'office-chair'
+    categoryPrefix === 'furniture' ? 'office-furniture' : 'office-chair'
   ];
   const images = productImages[imageKey] || fallbackImages;
 

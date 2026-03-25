@@ -1,16 +1,22 @@
-import type { AdminData, AdminProduct, ProductOverride } from '../types/adminData';
+import type { AdminData, AdminProduct, ProductOverride, SubcategoryOverride } from '../types/adminData';
 
 export const ADMIN_SESSION_STORAGE_KEY = 'js_traders_admin_session_v1';
 
 export const DEFAULT_ADMIN_ID = process.env.NEXT_PUBLIC_ADMIN_ID ?? 'admin';
-export const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? '1234';
+export const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? '9076';
 
 const isBrowser = () => typeof window !== 'undefined';
-const emptyData: AdminData = { products: [], overrides: [] };
+const emptyData: AdminData = { products: [], overrides: [], subcategoryOverrides: [] };
 
 const toOverrideMap = (overrides: ProductOverride[]) =>
   overrides.reduce<Record<string, ProductOverride>>((acc, item) => {
     acc[item.id] = item;
+    return acc;
+  }, {});
+
+const toSubcategoryOverrideMap = (overrides: SubcategoryOverride[] = []) =>
+  overrides.reduce<Record<string, string>>((acc, item) => {
+    acc[item.originalName] = item.newName;
     return acc;
   }, {});
 
@@ -20,7 +26,8 @@ const requestAdminData = async (
     | { type: 'updateProduct'; id: string; payload: Omit<AdminProduct, 'id' | 'createdAt'> }
     | { type: 'removeProduct'; id: string }
     | { type: 'upsertOverride'; payload: Omit<ProductOverride, 'updatedAt'> }
-    | { type: 'removeOverride'; id: string },
+    | { type: 'removeOverride'; id: string }
+    | { type: 'upsertSubcategoryOverride'; payload: Omit<SubcategoryOverride, 'updatedAt'> },
 ): Promise<AdminData> => {
   const endpoint = '/api/admin-data';
   const options: RequestInit = payload
@@ -66,11 +73,17 @@ export const getProductOverrideMap = (overrides: ProductOverride[]): Record<stri
 export const getProductOverrideMapFromData = (data: AdminData): Record<string, ProductOverride> =>
   toOverrideMap(data.overrides);
 
+export const getSubcategoryOverrideMapFromData = (data: AdminData): Record<string, string> =>
+  toSubcategoryOverrideMap(data.subcategoryOverrides);
+
+export const upsertSubcategoryOverride = async (payload: Omit<SubcategoryOverride, 'updatedAt'>): Promise<AdminData> =>
+  requestAdminData({ type: 'upsertSubcategoryOverride', payload });
+
 export const getProductsFromData = (data: AdminData): AdminProduct[] => data.products;
 
 export const getOverridesFromData = (data: AdminData): ProductOverride[] => data.overrides;
 
-export type { AdminData, AdminProduct, ProductOverride };
+export type { AdminData, AdminProduct, ProductOverride, SubcategoryOverride };
 
 export const setAdminSession = (isLoggedIn: boolean) => {
   if (!isBrowser()) return;

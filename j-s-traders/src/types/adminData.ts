@@ -17,7 +17,15 @@ export type ProductOverride = {
   updatedAt: string;
 };
 
+export type SubcategoryOverride = {
+  originalName: string;
+  newName: string;
+  updatedAt: string;
+};
+
 export type AdminData = {
   products: AdminProduct[];
   overrides: ProductOverride[];
+  subcategoryOverrides?: SubcategoryOverride[];
+  customSubcategories?: { categoryId: string; name: string }[];
 };
