@@ -9,7 +9,7 @@ foreach ($procId in $pids) {
 }
 
 $ErrorActionPreference = 'Continue'
-Start-Process cmd.exe -ArgumentList '/c', 'npm --prefix .\chair-company-website run dev' -WindowStyle Minimized
+Start-Process cmd.exe -ArgumentList '/c', 'npm --prefix .\j-s-traders run dev' -WindowStyle Minimized
 Start-Sleep -Seconds 14
 
 Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |

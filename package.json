@@ -4,11 +4,11 @@
   "description": "Premium Chair Manufacturing Website - Nepal",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix ./chair-company-website run dev",
-    "build": "npm --prefix ./chair-company-website run build",
-    "start": "npm --prefix ./chair-company-website run start",
-    "lint": "npm --prefix ./chair-company-website run lint",
-    "postinstall": "npm --prefix ./chair-company-website install"
+    "dev": "npm --prefix ./j-s-traders run dev",
+    "build": "npm --prefix ./j-s-traders run build",
+    "start": "npm --prefix ./j-s-traders run start",
+    "lint": "npm --prefix ./j-s-traders run lint",
+    "postinstall": "npm --prefix ./j-s-traders install"
   },
   "dependencies": {
     "next": "^14.2.35",

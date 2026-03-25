@@ -9,8 +9,8 @@ node_modules/
 # Next.js
 /.next/
 /out/
-chair-company-website/.next/
-chair-company-website/out/
+j-s-traders/.next/
+j-s-traders/out/
 
 # Production
 /build
@@ -41,3 +41,5 @@ Thumbs.db
 
 # OneDrive (don't track this)
 OneDrive/
+.vercel
+.env*.local

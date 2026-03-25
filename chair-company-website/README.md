@@ -1,11 +1,11 @@
-# Chair Company Website
+# J.S Traders
 
-Welcome to the Chair Company Website project! This project is designed to showcase a luxurious and modern chair collection, inspired by the design and functionality of high-end chair companies.
+Welcome to the J.S Traders project. This website showcases a modern premium chair collection and company information.
 
 ## Project Structure
 
 ```
-chair-company-website
+j-s-traders
 ├── src
 │   ├── app
 │   │   ├── globals.css          # Global styles including Tailwind CSS and custom styles
@@ -51,7 +51,7 @@ chair-company-website
 
 2. Navigate to the project directory:
    ```
-   cd chair-company-website
+   cd J.S-Traders-chair-factory/chair-company-website
    ```
 
 3. Install the dependencies:
