@@ -6,60 +6,30 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAdminData, getProductOverrideMapFromData } from '../lib/adminProducts';
-import { getAllWebsiteEditableItems, getTopPickProducts } from '../lib/siteProducts';
+// import { getAllWebsiteEditableItems, getTopPickProducts } from '../lib/siteProducts';
+
+const catalogImages = [
+  '/images/catalog/Js Traders catlog_1.png',
+  '/images/catalog/Js Traders catlog_2.png',
+  '/images/catalog/Js Traders catlog_3.png',
+  '/images/catalog/Js Traders catlog_4.png',
+  '/images/catalog/Js Traders catlog_5.png',
+  '/images/catalog/Js Traders catlog_6.png',
+  '/images/catalog/Js Traders catlog_7.png',
+  '/images/catalog/Js Traders catlog_8.png',
+];
 
 const Hero: React.FC = () => {
-  const featuredProduct = getTopPickProducts()[0];
-  const [featuredImage, setFeaturedImage] = useState(featuredProduct.imagePrimary);
-  const [galleryImages, setGalleryImages] = useState<string[]>([featuredProduct.imagePrimary]);
+  const [galleryImages, setGalleryImages] = useState<string[]>(catalogImages);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
 
-  const defaultGalleryImages = useMemo(
-    () => Array.from(new Set(getAllWebsiteEditableItems().map((item) => item.image))).filter(Boolean),
-    [],
-  );
-
+  // Only use catalog images for the gallery
   useEffect(() => {
-    const loadFeatured = async () => {
-      try {
-        const data = await fetchAdminData();
-        const overrides = getProductOverrideMapFromData(data);
-        const override = overrides[featuredProduct.id];
-        const resolvedFeaturedImage = override?.image ?? featuredProduct.imagePrimary;
-        const resolvedGallery = Array.from(
-          new Set(
-            getAllWebsiteEditableItems().map((item) => overrides[item.id]?.image ?? item.image),
-          ),
-        ).filter(Boolean);
-
-        setFeaturedImage(resolvedFeaturedImage);
-        setGalleryImages(resolvedGallery.length > 0 ? resolvedGallery : defaultGalleryImages);
-      } catch {
-        setFeaturedImage(featuredProduct.imagePrimary);
-        setGalleryImages(defaultGalleryImages.length > 0 ? defaultGalleryImages : [featuredProduct.imagePrimary]);
-      }
-    };
-
-    void loadFeatured();
-
-    const reload = () => {
-      void loadFeatured();
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('js-traders-data-updated', reload);
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('js-traders-data-updated', reload);
-      }
-    };
-  }, [defaultGalleryImages, featuredProduct.id, featuredProduct.imagePrimary]);
-
-  useEffect(() => {
+    setGalleryImages(catalogImages);
     setActiveGalleryIndex(0);
-  }, [galleryImages.length]);
+  }, []);
+
+
 
   useEffect(() => {
     if (galleryImages.length === 0) return;
@@ -71,10 +41,36 @@ const Hero: React.FC = () => {
     return () => window.clearInterval(timer);
   }, [galleryImages]);
 
-  const rotatingImage = galleryImages[activeGalleryIndex] ?? featuredImage;
+  const rotatingImage = galleryImages[activeGalleryIndex];
+
+  // Popup message logic
+  const [showPopup, setShowPopup] = useState(true);
+  const [popupMessage, setPopupMessage] = useState<string>("");
+  useEffect(() => {
+    fetch('/api/admin-data')
+      .then(res => res.json())
+      .then(data => setPopupMessage(data.popupMessage || ""));
+    const handler = () => {
+      fetch('/api/admin-data')
+        .then(res => res.json())
+        .then(data => setPopupMessage(data.popupMessage || ""));
+    };
+    window.addEventListener('js-traders-data-updated', handler);
+    return () => window.removeEventListener('js-traders-data-updated', handler);
+  }, []);
 
   return (
-    <section className="relative overflow-hidden bg-[#F5F5F7]">
+    <>
+      {popupMessage && showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full relative">
+            <button onClick={() => setShowPopup(false)} className="absolute top-2 right-2 text-xl font-bold">×</button>
+            <div className="text-lg font-semibold text-[#0F766E] mb-2">Notice</div>
+            <div className="text-black text-base">{popupMessage}</div>
+          </div>
+        </div>
+      )}
+      <section className="relative overflow-hidden bg-[#F5F5F7]">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-2 lg:gap-12 lg:px-8">
         <motion.div
           className="flex flex-col justify-center"

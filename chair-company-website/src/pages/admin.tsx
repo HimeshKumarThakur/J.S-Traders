@@ -79,6 +79,8 @@ const AdminPage = () => {
   const [products, setProducts] = useState<AdminProduct[]>([]);
 
   const [overrideMap, setOverrideMap] = useState<Record<string, { title: string; image: string; price: number; soldOut: boolean }>>({});
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupMessageDraft, setPopupMessageDraft] = useState("");
   const [websiteSearch, setWebsiteSearch] = useState('');
   const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
   const [editingWebsiteTitle, setEditingWebsiteTitle] = useState('');
@@ -93,11 +95,33 @@ const AdminPage = () => {
         const data = await fetchAdminData();
         setProducts(getProductsFromData(data));
         setOverrideMap(getProductOverrideMapFromData(data));
+        setPopupMessage(data.popupMessage || "");
+        setPopupMessageDraft(data.popupMessage || "");
       } catch {
         setProducts([]);
         setOverrideMap({});
+        setPopupMessage("");
+        setPopupMessageDraft("");
       }
     };
+  const handleSavePopupMessage = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ popupMessage: popupMessageDraft }),
+      });
+      if (!res.ok) throw new Error('Failed to save popup message');
+      setPopupMessage(popupMessageDraft);
+      setSuccess('Popup message updated.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('js-traders-data-updated'));
+      }
+    } catch {
+      setError('Could not save popup message.');
+    }
+  };
 
     setIsLoggedIn(isAdminLoggedIn());
     void syncData();
@@ -313,6 +337,25 @@ const AdminPage = () => {
               </form>
             ) : (
               <div className="space-y-8">
+                {/* Popup Message Section */}
+                <form onSubmit={handleSavePopupMessage} className="space-y-4 rounded-2xl border border-black/10 bg-[#F5F5F7] p-4 sm:p-5">
+                  <h2 className="text-lg font-[700] text-[#1A1A1A]">Homepage Popup Message</h2>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-[#1A1A1A]">Popup Message (leave blank to disable)</span>
+                    <textarea
+                      value={popupMessageDraft}
+                      onChange={e => setPopupMessageDraft(e.target.value)}
+                      className="w-full rounded-xl border border-black/15 px-3 py-2 min-h-[60px]"
+                      placeholder="Enter a message to show as a popup on the homepage"
+                    />
+                  </label>
+                  <button type="submit" className="inline-flex h-11 min-h-[44px] items-center rounded-xl bg-[#0F766E] px-5 text-sm font-semibold text-white">
+                    Save Popup Message
+                  </button>
+                  {popupMessage && (
+                    <div className="mt-2 text-sm text-emerald-700">Current: {popupMessage}</div>
+                  )}
+                </form>
                 <form onSubmit={handleAddProduct} className="space-y-4 rounded-2xl border border-black/10 bg-[#F5F5F7] p-4 sm:p-5">
                   <h2 className="text-lg font-[700] text-[#1A1A1A]">{editingCustomId ? 'Edit Custom Product' : 'Add Custom Product'}</h2>
 

@@ -19,4 +19,5 @@ export type ProductOverride = {
 export type AdminData = {
   products: AdminProduct[];
   overrides: ProductOverride[];
+  popupMessage?: string;
 };
